@@ -27,6 +27,7 @@ namespace BatteryWarning
         public float LowerLimitPercentage = 30.0f;
         public float UpperLimitPercentage = 80.0f;
 
+        // Ugly ugly solution to ComboBox retrive problem: await of thread needs combobox value but it's on dispatcher (dunno how to solve)
         public int SelectedDelay = 1;
 
         #endregion Public Fields
@@ -59,6 +60,7 @@ namespace BatteryWarning
         //                                                                     1s 15s 30s 60s 1.5m  5m   15m
         public List<int> TimeIntervalsInSeconds { get; set; } = new List<int> { 1, 15, 30, 60, 90, 300, 900 };
 
+        // filled in the constructor with the intervals labels
         public List<string> TimeIntervalsLabels { get; set; } = new List<string>();
 
         #endregion Public Properties
