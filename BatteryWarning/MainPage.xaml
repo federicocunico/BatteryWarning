@@ -5,9 +5,10 @@
     xmlns:local="using:BatteryWarning"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:windows="using:OxyPlot.Windows"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-    Width="350" Height="250">
+    Width="{Binding ScreenWidth}" Height="{Binding ScreenHeight}">
 
     <UserControl.Resources>
         <local:TextToDoubleConverter x:Key="TextConverter" />
@@ -15,6 +16,7 @@
 
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
@@ -28,7 +30,14 @@
         <TextBlock Grid.Row="0" Grid.Column="1" Margin="0" FontWeight="Bold"
                    Text="{Binding BatteryPercentage}" VerticalAlignment="Center" />
         <TextBlock Grid.Row="1" Grid.Column="0" Margin="0" FontWeight="Bold"
-                   Text="Check Time (minutes): " VerticalAlignment="Center" />
-        <TextBox Text="{Binding Path=DelayInMinutes, Converter={StaticResource TextConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10, 40, 10, 40" Grid.Row="1" Grid.Column="1" />
+                   Text="Update Time: " VerticalAlignment="Center" />
+        <!--<TextBox Text="{Binding Path=DelayInMinutes, Converter={StaticResource TextConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10, 40, 10, 40" Grid.Row="1" Grid.Column="1" />-->
+        <ComboBox x:Name="ComboBoxDelay" Grid.Row="1" Grid.Column="1"
+                  ItemsSource="{Binding Path=TimeIntervalsLabels}"
+                  SelectedIndex="0" />
+
+        <Grid Grid.Row="2" Grid.ColumnSpan="2" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+            <windows:PlotView Model="{Binding PercentageTimeSerie}" />
+        </Grid>
     </Grid>
 </Page>

@@ -1,4 +1,7 @@
-﻿using System;
+﻿using OxyPlot;
+using OxyPlot.Series;
+using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -24,19 +27,21 @@ namespace BatteryWarning
         public float LowerLimitPercentage = 30.0f;
         public float UpperLimitPercentage = 80.0f;
 
+        public int SelectedDelay = 1;
+
         #endregion Public Fields
 
         #region Public Properties
 
-        public int DelayInMinutes
-        {
-            get => MillisecondsToMinutes(_delayInMilliseconds);
-            set
-            {
-                _delayInMilliseconds = MinutesToMilliseconds(value);
-                OnPropertyChanged("DelayInMinutes");
-            }
-        }
+        //public int DelayInMinutes
+        //{
+        //    get => MillisecondsToMinutes(_delayInMilliseconds);
+        //    set
+        //    {
+        //        _delayInMilliseconds = MinutesToMilliseconds(value);
+        //        OnPropertyChanged();
+        //    }
+        //}
 
         public double BatteryPercentage
         {
@@ -44,28 +49,89 @@ namespace BatteryWarning
             set
             {
                 _batteryPercentage = value;
-                OnPropertyChanged("BatteryPercentage");
+                OnPropertyChanged();
             }
         }
+
+        public int ScreenWidth { get; set; } = 600;
+        public int ScreenHeight { get; set; } = 600;
+
+        //                                                                     1s 15s 30s 60s 1.5m  5m   15m
+        public List<int> TimeIntervalsInSeconds { get; set; } = new List<int> { 1, 15, 30, 60, 90, 300, 900 };
+
+        public List<string> TimeIntervalsLabels { get; set; } = new List<string>();
 
         #endregion Public Properties
 
         #region Private Vars
 
-        private int _delayInMilliseconds = (int)TimeSpan.FromSeconds(60).TotalMilliseconds;
+        //private int _delayInMilliseconds = (int)TimeSpan.FromSeconds(15).TotalMilliseconds;
         private double _batteryPercentage = -1;
+
+        private double _timeAxis = 0;
 
         #endregion Private Vars
 
+        public PlotModel PercentageTimeSerie { get; private set; }
+
         public MainPage()
         {
-            ApplicationView.PreferredLaunchViewSize = new Size(350, 250);
+            ApplicationView.PreferredLaunchViewSize = new Size(ScreenWidth, ScreenHeight);
             ApplicationView.PreferredLaunchWindowingMode = ApplicationViewWindowingMode.PreferredLaunchViewSize;
 
             DataContext = this;
             this.InitializeComponent();
 
+            // run async battery check
             Task.Run(BatteryCheck);
+
+            // Draw plot
+            PercentageTimeSerie = new PlotModel { Title = "Battery Charge Status over Minutes" };
+            PercentageTimeSerie.Series.Add(new LineSeries());
+
+            // fill labels for combobox
+            foreach (var t in TimeIntervalsInSeconds)
+            {
+                TimeIntervalsLabels.Add(GetLabelFromSeconds(t));
+            }
+
+            // set first item
+            ComboBoxDelay.SelectedIndex = 0;
+            ComboBoxDelay.SelectedValue = TimeIntervalsInSeconds[0];
+        }
+
+        private void UpdateDelayFromComboBox()
+        {
+            SelectedDelay = GetCurrentDelayInSeconds();
+        }
+
+        private int GetCurrentDelayInSeconds()
+        {
+            var i = ComboBoxDelay.SelectedIndex;
+            if (i >= 0)
+            {
+                return TimeIntervalsInSeconds[i];
+            }
+            else
+            {
+                return TimeIntervalsInSeconds[0];
+            }
+        }
+
+        //private int GetCurrentDelayInMilliseconds()
+        //{
+        //    var s = GetCurrentDelayInSeconds();
+        //    var m = SecondsToMilliseconds(s);
+        //    return m;
+        //}
+
+        private void UpdateTimeSerie(double percentage, int index = 0)
+        {
+            var currSerie = PercentageTimeSerie.Series[index];
+            var plot = currSerie as LineSeries;
+            plot.Points.Add(new DataPoint(_timeAxis, percentage));
+            PercentageTimeSerie.InvalidatePlot(true);
+            _timeAxis += TimeSpan.FromSeconds(GetCurrentDelayInSeconds()).TotalMinutes;
         }
 
         private async Task BatteryCheck()
@@ -88,6 +154,8 @@ namespace BatteryWarning
                 await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                     {
                         BatteryPercentage = percentage;
+                        UpdateTimeSerie(percentage);
+                        UpdateDelayFromComboBox();
                     });
 
                 if (percentage > UpperLimitPercentage && batteryReport.Status == BatteryStatus.Charging)
@@ -100,7 +168,8 @@ namespace BatteryWarning
                     Notification($"Battery Level under {LowerLimitPercentage}%. Please, connect the power supply.");
                 }
 
-                await Task.Delay(_delayInMilliseconds);
+                var m = SecondsToMilliseconds(SelectedDelay);
+                await Task.Delay(m);
             }
         }
 
@@ -158,9 +227,10 @@ namespace BatteryWarning
 
             XmlDocument xml = new XmlDocument();
             xml.LoadXml(toastContent);
+            var expiration = SecondsToMinutes(GetCurrentDelayInSeconds());
             var toast = new ToastNotification(xml)
             {
-                ExpirationTime = DateTime.Now.AddMinutes(DelayInMinutes)
+                ExpirationTime = DateTime.Now.AddMinutes(expiration)
             };
 
             ToastNotificationManager.CreateToastNotifier().Show(toast);
@@ -170,14 +240,46 @@ namespace BatteryWarning
 
         private int MinutesToMilliseconds(int minutes)
         {
-            var res = (int)TimeSpan.FromMinutes(minutes).TotalMilliseconds;
-            return res;
+            return (int)TimeSpan.FromMinutes(minutes).TotalMilliseconds;
         }
 
         private int MillisecondsToMinutes(int milliseconds)
         {
-            var res = (int)TimeSpan.FromMilliseconds(milliseconds).TotalMinutes;
-            return res;
+            return (int)TimeSpan.FromMilliseconds(milliseconds).TotalMinutes;
+        }
+
+        private int SecondsToMinutes(int seconds)
+        {
+            return (int)TimeSpan.FromSeconds(seconds).TotalMinutes;
+        }
+
+        private int SecondsToMilliseconds(int seconds)
+        {
+            return (int)TimeSpan.FromSeconds(seconds).TotalMilliseconds;
+        }
+
+        private string GetLabelFromSeconds(int seconds)
+        {
+            var t = TimeSpan.FromSeconds(seconds);
+            var m = (int)t.TotalMinutes;
+            if (m == 0)
+            {
+                return $"{seconds} seconds";
+            }
+
+            if (m > 0 && m < 60)
+            {
+                return $"{m} minutes";
+            }
+
+            if (m >= 60 && t.Hours < 24)
+            {
+                return $"{t.Hours} hours";
+            }
+            else
+            {
+                return $"{t.Days} days, {t.Hours} hours";
+            }
         }
 
         #endregion Methods: Utils
