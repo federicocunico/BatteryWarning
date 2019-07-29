@@ -1,0 +1,34 @@
+﻿<Page
+    x:Class="BatteryWarning.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:BatteryWarning"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d"
+    Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
+    Width="350" Height="250">
+
+    <UserControl.Resources>
+        <local:TextToDoubleConverter x:Key="TextConverter" />
+    </UserControl.Resources>
+
+    <Grid x:Name="MainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0" FontWeight="Bold"
+                   Text="Battery Percentage: " VerticalAlignment="Center" />
+        <TextBlock Grid.Row="0" Grid.Column="1" Margin="0" FontWeight="Bold"
+                   Text="{Binding BatteryPercentage}" VerticalAlignment="Center" />
+        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0" FontWeight="Bold"
+                   Text="Check Time (minutes): " VerticalAlignment="Center" />
+        <TextBox Text="{Binding Path=DelayInMinutes, Converter={StaticResource TextConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10, 40, 10, 40" Grid.Row="1" Grid.Column="1" />
+    </Grid>
+</Page>
