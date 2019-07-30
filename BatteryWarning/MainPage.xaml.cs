@@ -1,4 +1,5 @@
 ﻿using OxyPlot;
+using OxyPlot.Axes;
 using OxyPlot.Series;
 using System;
 using System.Collections.Generic;
@@ -71,6 +72,7 @@ namespace BatteryWarning
         private double _batteryPercentage = -1;
 
         private double _timeAxis = 0;
+        private int _maxAmountInPlot = 100; // 10000
 
         #endregion Private Vars
 
@@ -87,9 +89,8 @@ namespace BatteryWarning
             // run async battery check
             Task.Run(BatteryCheck);
 
-            // Draw plot
-            PercentageTimeSerie = new PlotModel { Title = "Battery Charge Status over Minutes" };
-            PercentageTimeSerie.Series.Add(new LineSeries());
+            // Initialize plot
+            PercentageTimeSerie = InitPlot("Battery Charge Status over Minutes", "Minutes", "Percentage", xMin: 0, xMax: 0);
 
             // fill labels for combobox
             foreach (var t in TimeIntervalsInSeconds)
@@ -100,6 +101,44 @@ namespace BatteryWarning
             // set first item
             ComboBoxDelay.SelectedIndex = 0;
             ComboBoxDelay.SelectedValue = TimeIntervalsInSeconds[0];
+        }
+
+        private PlotModel InitPlot(string title, string xLabel, string yLabel, bool allowScaling = false, double xMin = 0, double xMax = 0, double yMin = 0, double yMax = 100)
+        {
+            var plot = new PlotModel { Title = title };
+            LineSeries ls = new LineSeries();
+
+            var yAxis = new LinearAxis()
+            {
+                Position = AxisPosition.Left,
+                Minimum = yMin,
+                Maximum = yMax,
+                Key = "Vertical",
+                Title = yLabel ?? "",
+                IsZoomEnabled = false
+            };
+
+            var xAxis = new LinearAxis()
+            {
+                Position = AxisPosition.Bottom,
+                Key = "Horizontal",
+                Title = xLabel ?? "",
+                IsZoomEnabled = allowScaling
+            };
+
+            if (xMax > 0 && xMin > 0)
+            {
+                xAxis.Minimum = xMin;
+                xAxis.Maximum = xMax;
+            }
+
+            ls.XAxisKey = "Horizontal";
+            ls.YAxisKey = "Vertical";
+
+            plot.Axes.Add(xAxis);
+            plot.Axes.Add(yAxis);
+            plot.Series.Add(ls);
+            return plot;
         }
 
         private void UpdateDelayFromComboBox()
@@ -114,10 +153,8 @@ namespace BatteryWarning
             {
                 return TimeIntervalsInSeconds[i];
             }
-            else
-            {
-                return TimeIntervalsInSeconds[0];
-            }
+
+            return TimeIntervalsInSeconds[0];
         }
 
         //private int GetCurrentDelayInMilliseconds()
@@ -131,9 +168,22 @@ namespace BatteryWarning
         {
             var currSerie = PercentageTimeSerie.Series[index];
             var plot = currSerie as LineSeries;
+            PreventMemoryLeak(plot);
             plot.Points.Add(new DataPoint(_timeAxis, percentage));
             PercentageTimeSerie.InvalidatePlot(true);
             _timeAxis += TimeSpan.FromSeconds(GetCurrentDelayInSeconds()).TotalMinutes;
+        }
+
+        private void PreventMemoryLeak(LineSeries plot)
+        {
+            // non funziona bene
+            if (plot.Points.Count > _maxAmountInPlot)
+            {
+                var origPoint = plot.Points[0];
+                var firstPoint = new DataPoint(origPoint.X, origPoint.Y);
+                plot.Points.Clear();
+                plot.Points.Add(firstPoint);
+            }
         }
 
         private async Task BatteryCheck()
