@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:batteryWarning="clr-namespace:BatteryWarning"
+    xmlns:oxy="http://oxyplot.org/wpf"
     mc:Ignorable="d"
     Width="{Binding ScreenWidth}" Height="{Binding ScreenHeight}">
 
@@ -37,8 +38,9 @@
                   ItemsSource="{Binding Path=TimeIntervalsLabels}"
                   SelectedIndex="0" />
 
-		<!--<Grid Grid.Row="2" Grid.ColumnSpan="2" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
-			<windows:PlotView Model="{Binding PercentageTimeSerie}" />
-		</Grid>-->
+		<!--Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"-->
+		<Grid Grid.Row="2" Grid.ColumnSpan="2">
+			<oxy:PlotView Model="{Binding PercentageTimeSerie}" />
+		</Grid>
 	</Grid>
 </Page>
