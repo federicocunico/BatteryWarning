@@ -10,33 +10,88 @@
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
     Width="{Binding ScreenWidth}" Height="{Binding ScreenHeight}">
 
-    <UserControl.Resources>
+    <Page.Resources>
         <local:TextToDoubleConverter x:Key="TextConverter" />
-    </UserControl.Resources>
+    </Page.Resources>
 
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"></RowDefinition>
-            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="0.5*"></RowDefinition>
+            <RowDefinition Height="0.7*"></RowDefinition>
+            <RowDefinition Height="0.3*"></RowDefinition>
+            <RowDefinition Height="0.3*"></RowDefinition>
             <RowDefinition Height="*"></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
             <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="0" Grid.Column="0" Margin="0" FontWeight="Bold"
-                   Text="Battery Percentage: " VerticalAlignment="Center" />
-        <TextBlock Grid.Row="0" Grid.Column="1" Margin="0" FontWeight="Bold"
-                   Text="{Binding BatteryPercentage}" VerticalAlignment="Center" />
-        <TextBlock Grid.Row="1" Grid.Column="0" Margin="0" FontWeight="Bold"
-                   Text="Update Time: " VerticalAlignment="Center" />
-        <!--<TextBox Text="{Binding Path=DelayInMinutes, Converter={StaticResource TextConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10, 40, 10, 40" Grid.Row="1" Grid.Column="1" />-->
-        <ComboBox x:Name="ComboBoxDelay" Grid.Row="1" Grid.Column="1"
-                  ItemsSource="{Binding Path=TimeIntervalsLabels}"
-                  SelectedIndex="0" />
+        <!--Title-->
+        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                   FontSize="55" Text="TITOLONEh" FontWeight="Bold"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Margin="50, 50, 50, 50" />
+        <!--Display Percentage-->
+        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Vertical">
+            <TextBlock Text="Battery Percentage:"
+                       FontWeight="Bold"
+                       FontSize="22"
+                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Margin="50, 0, 50, 50" />
+            <TextBlock FontWeight="Bold"
+                       FontSize="100"
+                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Margin="50, 0, 50, 0">
+                <Run Text="{Binding BatteryPercentage}"></Run>
+                <Run Text="%"></Run>
+            </TextBlock>
+        </StackPanel>
 
-        <Grid Grid.Row="2" Grid.ColumnSpan="2" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <!--Combo Boxes-->
+
+        <!--Update Time-->
+        <!--<TextBox Text="{Binding Path=DelayInMinutes, Converter={StaticResource TextConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10, 40, 10, 40" Grid.Row="1" Grid.Column="1" />-->
+        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+
+            <TextBlock Margin="0,0,25,0" FontWeight="Bold"
+                       Text="Update Time: " VerticalAlignment="Center" />
+            <ComboBox x:Name="DelayComboBox"
+                      ItemsSource="{Binding Path=TimeIntervalsLabels}"
+                      SelectedIndex="0"
+                      VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!--Percent Threshold MIN-->
+        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Margin="0,0,25,0" FontWeight="Bold"
+                       Text="Min Percentage: " VerticalAlignment="Center" />
+            <ComboBox x:Name="MinPercentageComboBox"
+                      ItemsSource="{Binding Path=Percentages}"
+                      SelectedIndex="0"
+                      VerticalAlignment="Center" />
+
+            <TextBlock Margin="100,0,25,0" FontWeight="Bold"
+                       Text="Max Percentage: " VerticalAlignment="Center" />
+            <ComboBox x:Name="MaxPercentageComboBox"
+                      ItemsSource="{Binding Path=Percentages}"
+                      SelectedIndex="0"
+                      VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!--Percent Threshold MAX-->
+        <StackPanel Grid.Row="3" Grid.Column="2"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center" HorizontalAlignment="Left">
+        </StackPanel>
+
+        <!--Plot-->
+        <Grid Grid.Row="4" Grid.ColumnSpan="3" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
             <windows:PlotView Model="{Binding PercentageTimeSerie}" />
         </Grid>
     </Grid>

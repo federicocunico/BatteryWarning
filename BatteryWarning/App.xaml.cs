@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
+using Windows.ApplicationModel.ExtendedExecution;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.UI.Xaml;
@@ -95,6 +96,25 @@ namespace BatteryWarning
             var deferral = e.SuspendingOperation.GetDeferral();
             //TODO: Save application state and stop any background activity
             deferral.Complete();
+            //var deferral = e.SuspendingOperation.GetDeferral();
+            //using (var session = new ExtendedExecutionSession())
+            //{
+            //    session.Reason = ExtendedExecutionReason.Unspecified;
+            //    session.Description = "Battery Status Tracking";
+            //    session.Revoked += ExtensionRevoked;
+            //    var result = await session.RequestExtensionAsync();
+            //    if (result == ExtendedExecutionResult.Allowed)
+            //    {
+            //        //await SavingDataToCloud();
+            //    }
+            //}
+            //deferral.Complete();
+        }
+
+        private void ExtensionRevoked(object sender, ExtendedExecutionRevokedEventArgs args)
+        {
+            //Perform Operations to clode the resource.
+            MainPage.NotifyUser("Not able to continue in background: Extension Revoked", 90);
         }
     }
 }

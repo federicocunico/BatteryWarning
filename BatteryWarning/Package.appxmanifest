@@ -11,7 +11,7 @@
     Publisher="CN=Federico"
     Version="1.0.0.0" />
 
-  <mp:PhoneIdentity PhoneProductId="81429f26-9074-4b3f-96ea-d58e0353964a" PhonePublisherId="00000000-0000-0000-0000-000000000000"/>
+  <mp:PhoneIdentity PhoneProductId="81429f26-9074-4b3f-96ea-d58e0353964a" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
 
   <Properties>
     <DisplayName>BatteryWarning</DisplayName>
@@ -24,7 +24,7 @@
   </Dependencies>
 
   <Resources>
-    <Resource Language="x-generate"/>
+    <Resource Language="x-generate" />
   </Resources>
 
   <Applications>
@@ -37,7 +37,7 @@
         Square44x44Logo="Assets\Square44x44Logo.png"
         Description="BatteryWarning"
         BackgroundColor="transparent">
-        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png"/>
+        <uap:DefaultTile Wide310x150Logo="Assets\Wide310x150Logo.png" />
         <uap:SplashScreen Image="Assets\SplashScreen.png" />
       </uap:VisualElements>
     </Application>
@@ -45,5 +45,7 @@
 
   <Capabilities>
     <Capability Name="internetClient" />
+    <!--<Capability Name="extendedExecutionUnconstrained" /> -->
+    <!--<Capability Name="extendedBackgroundTaskTime" /> -->
   </Capabilities>
 </Package>

@@ -6,15 +6,16 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using Windows.ApplicationModel.Background;
+using Windows.ApplicationModel.ExtendedExecution;
 using Windows.Data.Xml.Dom;
 using Windows.Devices.Power;
 using Windows.Foundation;
 using Windows.System.Power;
+using Windows.UI.Core;
 using Windows.UI.Notifications;
 using Windows.UI.ViewManagement;
 using Windows.UI.Xaml.Controls;
-
-// The Blank Page item template is documented at https://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
 namespace BatteryWarning
 {
@@ -56,7 +57,7 @@ namespace BatteryWarning
         }
 
         public int ScreenWidth { get; set; } = 600;
-        public int ScreenHeight { get; set; } = 600;
+        public int ScreenHeight { get; set; } = 900;
 
         //                                                                     1s 15s 30s 60s 1.5m  5m   15m
         public List<int> TimeIntervalsInSeconds { get; set; } = new List<int> { 1, 15, 30, 60, 90, 300, 900 };
@@ -74,6 +75,10 @@ namespace BatteryWarning
         private double _timeAxis = 0;
         private int _maxAmountInPlot = 100; // 10000
 
+        public delegate void OnBatteryChangedHandler(double percentage);
+
+        public static event OnBatteryChangedHandler OnBatteryChanged;
+
         #endregion Private Vars
 
         public PlotModel PercentageTimeSerie { get; private set; }
@@ -86,24 +91,40 @@ namespace BatteryWarning
             DataContext = this;
             this.InitializeComponent();
 
+            // Setup the method for update
+            OnBatteryChanged += UpdateInterface;
+
             // run async battery check
             Task.Run(BatteryCheck);
 
             // Initialize plot
-            PercentageTimeSerie = InitPlot("Battery Charge Status over Minutes", "Minutes", "Percentage", xMin: 0, xMax: 0);
+            PercentageTimeSerie = InitPlot("Battery Status", "Minutes", "Percentage");
 
             // fill labels for combobox
+            TimeIntervalsInSeconds.Sort();
             foreach (var t in TimeIntervalsInSeconds)
             {
                 TimeIntervalsLabels.Add(GetLabelFromSeconds(t));
             }
 
             // set first item
-            ComboBoxDelay.SelectedIndex = 0;
-            ComboBoxDelay.SelectedValue = TimeIntervalsInSeconds[0];
+            DelayComboBox.SelectedIndex = 0;
+            DelayComboBox.SelectedValue = TimeIntervalsInSeconds[0];
         }
 
-        private PlotModel InitPlot(string title, string xLabel, string yLabel, bool allowScaling = false, double xMin = 0, double xMax = 0, double yMin = 0, double yMax = 100)
+        private void UpdateInterface(double percentage)
+        {
+            //ApplicationView.GetForCurrentView().TryResizeView(new Size(ScreenWidth, ScreenHeight));
+            BatteryPercentage = percentage;
+            UpdateTimeSerie();
+            UpdateDelayFromComboBox();
+        }
+
+        private PlotModel InitPlot(string title,
+            string xLabel, string yLabel,
+            bool allowScaling = false,
+            double xMin = 0, double xMax = 0,
+            double yMin = 0, double yMax = 100)
         {
             var plot = new PlotModel { Title = title };
             LineSeries ls = new LineSeries();
@@ -148,7 +169,7 @@ namespace BatteryWarning
 
         private int GetCurrentDelayInSeconds()
         {
-            var i = ComboBoxDelay.SelectedIndex;
+            var i = DelayComboBox.SelectedIndex;
             if (i >= 0)
             {
                 return TimeIntervalsInSeconds[i];
@@ -164,12 +185,12 @@ namespace BatteryWarning
         //    return m;
         //}
 
-        private void UpdateTimeSerie(double percentage, int index = 0)
+        private void UpdateTimeSerie(int index = 0)
         {
             var currSerie = PercentageTimeSerie.Series[index];
             var plot = currSerie as LineSeries;
             PreventMemoryLeak(plot);
-            plot.Points.Add(new DataPoint(_timeAxis, percentage));
+            plot.Points.Add(new DataPoint(_timeAxis, BatteryPercentage));
             PercentageTimeSerie.InvalidatePlot(true);
             _timeAxis += TimeSpan.FromSeconds(GetCurrentDelayInSeconds()).TotalMinutes;
         }
@@ -188,44 +209,67 @@ namespace BatteryWarning
 
         private async Task BatteryCheck()
         {
-            while (true)
+            using (var session = new ExtendedExecutionSession())
             {
-                var batteryReport = Battery.AggregateBattery.GetReport();
-                double percentage = -1;
-                if (batteryReport.RemainingCapacityInMilliwattHours != null)
+                session.Reason = ExtendedExecutionReason.Unspecified;
+                session.Description = "Battery Status Tracking";
+                var result = await BackgroundExecutionManager.RequestAccessAsync();
+                if (result != BackgroundAccessStatus.DeniedBySystemPolicy
+                    || result != BackgroundAccessStatus.DeniedByUser)
                 {
-                    if (batteryReport.FullChargeCapacityInMilliwattHours != null)
+                    while (true)
                     {
-                        percentage = (batteryReport.RemainingCapacityInMilliwattHours.Value /
-                                          (double)batteryReport.FullChargeCapacityInMilliwattHours.Value);
+                        var batteryReport = Battery.AggregateBattery.GetReport();
+                        double percentage = -1;
+                        if (batteryReport.RemainingCapacityInMilliwattHours != null)
+                        {
+                            if (batteryReport.FullChargeCapacityInMilliwattHours != null)
+                            {
+                                percentage = (batteryReport.RemainingCapacityInMilliwattHours.Value /
+                                                  (double)batteryReport.FullChargeCapacityInMilliwattHours.Value);
+                            }
+                        }
+
+                        percentage *= 100;
+                        percentage = percentage < 0 ? 0 : percentage;   // if missing battery.. TODO
+
+                        await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                            {
+                                UpdateInterface(percentage);
+                            });
+
+                        if (percentage > UpperLimitPercentage && batteryReport.Status == BatteryStatus.Charging)
+                        {
+                            NotifyUser($"Battery Level above {UpperLimitPercentage}%. To disconnect the power supply is suggested.");
+                        }
+
+                        if (percentage < LowerLimitPercentage && batteryReport.Status == BatteryStatus.Discharging)
+                        {
+                            NotifyUser($"Battery Level under {LowerLimitPercentage}%. Please, connect the power supply.");
+                        }
+
+                        //MainPage.OnBatteryChanged.Invoke(percentage);
+                        var m = SecondsToMilliseconds(SelectedDelay);
+                        await Task.Delay(m);
                     }
                 }
-
-                percentage *= 100;
-
-                await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                else
+                {
+                    await Dispatcher.RunAsync(CoreDispatcherPriority.High, () =>
                     {
-                        BatteryPercentage = percentage;
-                        UpdateTimeSerie(percentage);
-                        UpdateDelayFromComboBox();
+                        NotifyUser($"Failed to Start Background Process due to: {result}");
                     });
-
-                if (percentage > UpperLimitPercentage && batteryReport.Status == BatteryStatus.Charging)
-                {
-                    Notification($"Battery Level above {UpperLimitPercentage}%. To disconnect the power supply is suggested.");
                 }
-
-                if (percentage < LowerLimitPercentage && batteryReport.Status == BatteryStatus.Discharging)
-                {
-                    Notification($"Battery Level under {LowerLimitPercentage}%. Please, connect the power supply.");
-                }
-
-                var m = SecondsToMilliseconds(SelectedDelay);
-                await Task.Delay(m);
             }
         }
 
-        public void Notification(string message)
+        public void NotifyUser(string message)
+        {
+            var expiration = SecondsToMinutes(GetCurrentDelayInSeconds());
+            NotifyUser(message, expiration);
+        }
+
+        public static void NotifyUser(string message, int durationSeconds)
         {
             var toastContent = $@"<toast launch='action=viewAlarm&amp;alarmId=3' scenario='alarm'>
                   <visual>
@@ -279,7 +323,7 @@ namespace BatteryWarning
 
             XmlDocument xml = new XmlDocument();
             xml.LoadXml(toastContent);
-            var expiration = SecondsToMinutes(GetCurrentDelayInSeconds());
+            var expiration = durationSeconds;
             var toast = new ToastNotification(xml)
             {
                 ExpirationTime = DateTime.Now.AddMinutes(expiration)
