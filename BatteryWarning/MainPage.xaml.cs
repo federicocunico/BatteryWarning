@@ -73,6 +73,10 @@ namespace BatteryWarning
 
 		public PlotModel PercentageTimeSerie { get; private set; }
 
+		public delegate void OnBatteryChangedHandler(double percentage);
+
+		public static event OnBatteryChangedHandler OnBatteryChanged;
+
 		public MainPage()
 		{
 			//ApplicationView.PreferredLaunchViewSize = new Size(ScreenWidth, ScreenHeight);
@@ -80,6 +84,11 @@ namespace BatteryWarning
 
 			DataContext = this;
 			this.InitializeComponent();
+
+			OnBatteryChanged += (percentage) =>
+			{
+				UpdateTimeSerie(percentage);
+			};
 
 			// run async battery check
 			Task.Run(BatteryCheck);
@@ -236,6 +245,8 @@ namespace BatteryWarning
 				//{
 				//	Notification($"Battery Level under {LowerLimitPercentage}%. Please, connect the power supply.");
 				//}
+
+				MainPage.OnBatteryChanged.Invoke(percentage);
 
 				var m = SecondsToMilliseconds(SelectedDelay);
 				await Task.Delay(m);
