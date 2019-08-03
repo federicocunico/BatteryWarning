@@ -26,9 +26,6 @@ namespace BatteryWarning
     {
         #region Public Fields
 
-        public float LowerLimitPercentage = 30.0f;
-        public float UpperLimitPercentage = 80.0f;
-
         // Ugly ugly solution to ComboBox retrive problem: await of thread needs combobox value but it's on dispatcher (dunno how to solve)
         public int SelectedDelay = 1;
 
@@ -45,6 +42,21 @@ namespace BatteryWarning
         //        OnPropertyChanged();
         //    }
         //}
+        private float _minPercentage = 30.0f;
+
+        private float _maxPercentage = 80.0f;
+
+        public float MinPercentage
+        {
+            get => MinPercentages[MinPercentageComboBox.SelectedIndex];
+            set => MinPercentage = value;
+        }
+
+        public float MaxPercentage
+        {
+            get => MaxPercentages[MaxPercentageComboBox.SelectedIndex];
+            set => MaxPercentage = value;
+        }
 
         public double BatteryPercentage
         {
@@ -64,6 +76,9 @@ namespace BatteryWarning
 
         // filled in the constructor with the intervals labels
         public List<string> TimeIntervalsLabels { get; set; } = new List<string>();
+
+        public List<float> MaxPercentages { get; set; } = new List<float> { 100, 90, 80, 70, 60 };
+        public List<float> MinPercentages { get; set; } = new List<float> { 10, 20, 30, 40, 50 };
 
         #endregion Public Properties
 
@@ -233,19 +248,23 @@ namespace BatteryWarning
                         percentage *= 100;
                         percentage = percentage < 0 ? 0 : percentage;   // if missing battery.. TODO
 
+                        var upperLimitPercentage = 80.0f;
+                        var lowerLimitPercentage = 30.0f;
                         await Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                             {
                                 UpdateInterface(percentage);
+                                upperLimitPercentage = MaxPercentage;
+                                lowerLimitPercentage = MinPercentage;
                             });
 
-                        if (percentage > UpperLimitPercentage && batteryReport.Status == BatteryStatus.Charging)
+                        if (percentage > upperLimitPercentage && batteryReport.Status == BatteryStatus.Charging)
                         {
-                            NotifyUser($"Battery Level above {UpperLimitPercentage}%. To disconnect the power supply is suggested.");
+                            NotifyUser($"Battery Level above {upperLimitPercentage}%. To disconnect the power supply is suggested.");
                         }
 
-                        if (percentage < LowerLimitPercentage && batteryReport.Status == BatteryStatus.Discharging)
+                        if (percentage < lowerLimitPercentage && batteryReport.Status == BatteryStatus.Discharging)
                         {
-                            NotifyUser($"Battery Level under {LowerLimitPercentage}%. Please, connect the power supply.");
+                            NotifyUser($"Battery Level under {lowerLimitPercentage}%. Please, connect the power supply.");
                         }
 
                         //MainPage.OnBatteryChanged.Invoke(percentage);

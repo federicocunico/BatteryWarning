@@ -8,7 +8,8 @@
     xmlns:windows="using:OxyPlot.Windows"
     mc:Ignorable="d"
     Background="{ThemeResource ApplicationPageBackgroundThemeBrush}"
-    Width="{Binding ScreenWidth}" Height="{Binding ScreenHeight}">
+    MinWidth="{Binding ScreenWidth, Mode=OneTime}" MinHeight="{Binding ScreenHeight, Mode=OneTime}"
+    Width="{Binding ScreenWidth, Mode=TwoWay}" Height="{Binding ScreenHeight, Mode=TwoWay}">
 
     <Page.Resources>
         <local:TextToDoubleConverter x:Key="TextConverter" />
@@ -72,23 +73,23 @@
             <TextBlock Margin="0,0,25,0" FontWeight="Bold"
                        Text="Min Percentage: " VerticalAlignment="Center" />
             <ComboBox x:Name="MinPercentageComboBox"
-                      ItemsSource="{Binding Path=Percentages}"
-                      SelectedIndex="0"
+                      ItemsSource="{Binding Path=MinPercentages}"
+                      SelectedIndex="1"
                       VerticalAlignment="Center" />
 
             <TextBlock Margin="100,0,25,0" FontWeight="Bold"
                        Text="Max Percentage: " VerticalAlignment="Center" />
             <ComboBox x:Name="MaxPercentageComboBox"
-                      ItemsSource="{Binding Path=Percentages}"
-                      SelectedIndex="0"
+                      ItemsSource="{Binding Path=MaxPercentages}"
+                      SelectedIndex="2"
                       VerticalAlignment="Center" />
         </StackPanel>
 
         <!--Percent Threshold MAX-->
-        <StackPanel Grid.Row="3" Grid.Column="2"
+        <!--<StackPanel Grid.Row="3" Grid.Column="2"
                     Orientation="Horizontal"
                     VerticalAlignment="Center" HorizontalAlignment="Left">
-        </StackPanel>
+        </StackPanel>-->
 
         <!--Plot-->
         <Grid Grid.Row="4" Grid.ColumnSpan="3" Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
