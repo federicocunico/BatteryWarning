@@ -17,11 +17,11 @@
 
     <Grid x:Name="MainGrid">
         <Grid.RowDefinitions>
-            <RowDefinition Height="0.5*"></RowDefinition>
-            <RowDefinition Height="0.7*"></RowDefinition>
-            <RowDefinition Height="0.3*"></RowDefinition>
-            <RowDefinition Height="0.3*"></RowDefinition>
-            <RowDefinition Height="*"></RowDefinition>
+            <RowDefinition Height="0.2*"></RowDefinition>
+            <RowDefinition Height="0.2*"></RowDefinition>
+            <RowDefinition Height="0.1*"></RowDefinition>
+            <RowDefinition Height="0.1*"></RowDefinition>
+            <RowDefinition Height="0.4*"></RowDefinition>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"></ColumnDefinition>
@@ -31,18 +31,18 @@
 
         <!--Title-->
         <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
-                   FontSize="55" Text="TITOLONEh" FontWeight="Bold"
+                   FontSize="35" Text="TITOLONEh" FontWeight="Bold"
                    HorizontalAlignment="Center" VerticalAlignment="Center"
                    Margin="50, 50, 50, 50" />
         <!--Display Percentage-->
         <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Vertical">
             <TextBlock Text="Battery Percentage:"
                        FontWeight="Bold"
-                       FontSize="22"
+                       FontSize="18"
                        VerticalAlignment="Center" HorizontalAlignment="Center"
                        Margin="50, 0, 50, 50" />
             <TextBlock FontWeight="Bold"
-                       FontSize="100"
+                       FontSize="45"
                        VerticalAlignment="Center" HorizontalAlignment="Center"
                        Margin="50, 0, 50, 0">
                 <Run Text="{Binding BatteryPercentage}"></Run>

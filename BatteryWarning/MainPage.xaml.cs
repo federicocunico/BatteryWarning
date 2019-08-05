@@ -68,8 +68,8 @@ namespace BatteryWarning
             }
         }
 
-        public int ScreenWidth { get; set; } = 600;
-        public int ScreenHeight { get; set; } = 900;
+        public int ScreenWidth { get; set; } = 500;
+        public int ScreenHeight { get; set; } = 850;
 
         //                                                                     1s 15s 30s 60s 1.5m  5m   15m
         public List<int> TimeIntervalsInSeconds { get; set; } = new List<int> { 1, 15, 30, 60, 90, 300, 900 };
@@ -100,8 +100,7 @@ namespace BatteryWarning
 
         public MainPage()
         {
-            ApplicationView.PreferredLaunchViewSize = new Size(ScreenWidth, ScreenHeight);
-            ApplicationView.PreferredLaunchWindowingMode = ApplicationViewWindowingMode.PreferredLaunchViewSize;
+            ResetApplicationView();
 
             DataContext = this;
             this.InitializeComponent();
@@ -125,6 +124,15 @@ namespace BatteryWarning
             // set first item
             DelayComboBox.SelectedIndex = 0;
             DelayComboBox.SelectedValue = TimeIntervalsInSeconds[0];
+        }
+
+        public void ResetApplicationView()
+        {
+            var size = new Size(ScreenWidth, ScreenHeight);
+            var view = ApplicationView.GetForCurrentView();
+            view.ExitFullScreenMode();
+            ApplicationView.PreferredLaunchViewSize = size;
+            ApplicationView.PreferredLaunchWindowingMode = ApplicationViewWindowingMode.PreferredLaunchViewSize;
         }
 
         private void UpdateInterface(double percentage)
