@@ -1,0 +1,96 @@
+﻿<Window x:Class="BatteryWarning.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:BatteryWarning.WPF"
+        xmlns:oxy="http://oxyplot.org/wpf"
+        mc:Ignorable="d"
+        Title="MainWindow"
+        MinWidth="{Binding ScreenWidth, Mode=OneTime}"
+        MinHeight="{Binding ScreenHeight, Mode=OneTime}"
+        Width="{Binding ScreenWidth, Mode=TwoWay}"
+        Height="{Binding ScreenHeight, Mode=TwoWay}">
+
+    <Grid x:Name="MainGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="0.2*"></RowDefinition>
+            <RowDefinition Height="0.2*"></RowDefinition>
+            <RowDefinition Height="0.1*"></RowDefinition>
+            <RowDefinition Height="0.1*"></RowDefinition>
+            <RowDefinition Height="0.4*"></RowDefinition>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+            <ColumnDefinition Width="*"></ColumnDefinition>
+        </Grid.ColumnDefinitions>
+
+        <!--Title-->
+        <TextBlock Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="3"
+                   FontSize="35" Text="Battery Warning" FontWeight="Bold"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Margin="50, 50, 50, 50" />
+        <!--Display Percentage-->
+        <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Vertical">
+            <TextBlock Text="Battery Percentage:"
+                       FontWeight="Bold"
+                       FontSize="18"
+                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Margin="50, 0, 50, 50" />
+            <TextBlock FontWeight="Bold"
+                       FontSize="45"
+                       VerticalAlignment="Center" HorizontalAlignment="Center"
+                       Margin="50, 0, 50, 0">
+                <Run Text="{Binding BatteryPercentage}"></Run>
+                <Run Text="%"></Run>
+            </TextBlock>
+        </StackPanel>
+
+        <!--Combo Boxes-->
+
+        <!--Update Time-->
+        <!--<TextBox Text="{Binding Path=DelayInMinutes, Converter={StaticResource TextConverter}, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="10, 40, 10, 40" Grid.Row="1" Grid.Column="1" />-->
+        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+
+            <TextBlock Margin="0,0,25,0" FontWeight="Bold"
+                       Text="Update Time: " VerticalAlignment="Center" />
+            <ComboBox x:Name="DelayComboBox"
+                      ItemsSource="{Binding Path=TimeIntervalsLabels}"
+                      SelectedIndex="0"
+                      VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!--Percent Threshold MIN-->
+        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center" HorizontalAlignment="Center">
+            <TextBlock Margin="0,0,25,0" FontWeight="Bold"
+                       Text="Min Percentage: " VerticalAlignment="Center" />
+            <ComboBox x:Name="MinPercentageComboBox"
+                      ItemsSource="{Binding Path=MinPercentages}"
+                      SelectedIndex="1"
+                      VerticalAlignment="Center" />
+
+            <TextBlock Margin="100,0,25,0" FontWeight="Bold"
+                       Text="Max Percentage: " VerticalAlignment="Center" />
+            <ComboBox x:Name="MaxPercentageComboBox"
+                      ItemsSource="{Binding Path=MaxPercentages}"
+                      SelectedIndex="2"
+                      VerticalAlignment="Center" />
+        </StackPanel>
+
+        <!--Percent Threshold MAX-->
+        <!--<StackPanel Grid.Row="3" Grid.Column="2"
+                    Orientation="Horizontal"
+                    VerticalAlignment="Center" HorizontalAlignment="Left">
+        </StackPanel>-->
+
+        <!--Plot-->
+        <Grid Grid.Row="4" Grid.ColumnSpan="3">
+            <oxy:PlotView Model="{Binding PercentageTimeSerie}" />
+        </Grid>
+    </Grid>
+</Window>
