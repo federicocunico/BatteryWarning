@@ -337,10 +337,10 @@ namespace BatteryWarning.WPF
                 var lowerLimitPercentage = 30.0f;
 
                 //TODO: correggere
-                var flag = SystemPower.BatteryFlag.NoSystemBattery; //SystemPower.GetCurrentStatus();
+                var flag = SystemPower.GetCurrentStatus();
                 if (flag == SystemPower.BatteryFlag.NoSystemBattery || flag == SystemPower.BatteryFlag.Unknown)
                 {
-                    percentage = 20;
+                    percentage = -1;
                 }
 
                 await Dispatcher.BeginInvoke((Action)(() =>
