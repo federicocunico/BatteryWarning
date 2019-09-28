@@ -89,8 +89,8 @@
         </StackPanel>-->
 
         <!--Plot-->
-        <Grid Grid.Row="4" Grid.ColumnSpan="3">
-            <oxy:PlotView Model="{Binding PercentageTimeSerie}" />
+        <Grid Grid.Column="0" Grid.Row="4" Grid.ColumnSpan="3">
+            <oxy:PlotView Model="{Binding BatteryPercentageModel}" />
         </Grid>
     </Grid>
 </Window>

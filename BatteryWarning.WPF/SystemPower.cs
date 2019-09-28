@@ -19,7 +19,7 @@ namespace BatteryWarning.WPF
             Unknown = 255
         }
 
-        private enum BatteryFlag : byte
+        public enum BatteryFlag : byte
         {
             High = 1,
             Low = 2,
@@ -61,12 +61,12 @@ namespace BatteryWarning.WPF
             return SPS.BatteryLifePercent;
         }
 
-        public static bool HasNoBattery()
+        public static BatteryFlag GetCurrentStatus()
         {
             SystemPowerStatus SPS = new SystemPowerStatus();
             GetSystemPowerStatus(out SPS);
 
-            return SPS.flgBattery == BatteryFlag.NoSystemBattery;
+            return SPS.flgBattery;
         }
     }
 }

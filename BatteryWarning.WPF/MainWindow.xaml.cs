@@ -1,23 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
+using System.IO;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Xml;
+using Windows.Data.Xml.Dom;
+using Windows.UI.Notifications;
 using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
+using ToastNotifications;
+using ToastNotifications.Lifetime;
+using ToastNotifications.Lifetime.Clear;
+using ToastNotifications.Position;
+using ToastNotifications.Messages;
 
 namespace BatteryWarning.WPF
 {
@@ -50,13 +47,35 @@ namespace BatteryWarning.WPF
 
         public float MinPercentage
         {
-            get => MinPercentages[MinPercentageComboBox.SelectedIndex];
+            //get => MinPercentages[MinPercentageComboBox.SelectedIndex];
+            get
+            {
+                if (MinPercentageComboBox.SelectedIndex < 0)
+                {
+                    return MinPercentages[0];
+                }
+                else
+                {
+                    return MinPercentages[MinPercentageComboBox.SelectedIndex];
+                }
+            }
             set => MinPercentage = value;
         }
 
         public float MaxPercentage
         {
-            get => MaxPercentages[MaxPercentageComboBox.SelectedIndex];
+            // get => MaxPercentages[MaxPercentageComboBox.SelectedIndex];
+            get
+            {
+                if (MaxPercentageComboBox.SelectedIndex < 0)
+                {
+                    return MaxPercentages[0];
+                }
+                else
+                {
+                    return MaxPercentages[MaxPercentageComboBox.SelectedIndex];
+                }
+            }
             set => MaxPercentage = value;
         }
 
@@ -82,6 +101,10 @@ namespace BatteryWarning.WPF
         public List<float> MaxPercentages { get; set; } = new List<float> { 100, 90, 80, 70, 60 };
         public List<float> MinPercentages { get; set; } = new List<float> { 10, 20, 30, 40, 50 };
 
+        // public IList<DataPoint> PercentageDataPoints { get; private set; } = new List<DataPoint>();
+
+        public string PlotTitle { get; set; } = "Battery Status";
+
         #endregion Public Properties
 
         #region Private Vars
@@ -92,19 +115,20 @@ namespace BatteryWarning.WPF
         private double _timeAxis = 0;
         private int _maxAmountInPlot = 100; // 10000
 
+        private Notifier _notifier;
+
+        #endregion Private Vars
+
         public delegate void OnBatteryChangedHandler(double percentage);
 
         public static event OnBatteryChangedHandler OnBatteryChanged;
 
-        #endregion Private Vars
-
-        public PlotModel PercentageTimeSerie { get; private set; }
+        public PlotModel BatteryPercentageModel { get; private set; }
 
         public MainWindow()
         {
             ResetApplicationView();
 
-            DataContext = this;
             this.InitializeComponent();
 
             // Setup the method for update
@@ -114,7 +138,11 @@ namespace BatteryWarning.WPF
             Task.Run(BatteryCheck);
 
             // Initialize plot
-            PercentageTimeSerie = InitPlot("Battery Status", "Minutes", "Percentage");
+            BatteryPercentageModel = InitPlot("Battery Status", "Minutes", "Percentage");
+            //TestFill();
+
+            // Set context AFTER creation of model
+            DataContext = this;
 
             // fill labels for combobox
             TimeIntervalsInSeconds.Sort();
@@ -124,8 +152,71 @@ namespace BatteryWarning.WPF
             }
 
             // set first item
-            DelayComboBox.SelectedIndex = 0;
-            DelayComboBox.SelectedValue = TimeIntervalsInSeconds[0];
+            SetFirstItems();
+
+            InstantiateNotifier();
+        }
+
+        private void InstantiateNotifier()
+        {
+            _notifier = new Notifier(cfg =>
+            {
+                cfg.PositionProvider = new PrimaryScreenPositionProvider(
+                    corner: Corner.BottomRight,
+                    offsetX: 10,
+                    offsetY: 10
+                );
+                //cfg.PositionProvider = new WindowPositionProvider(
+                //    parentWindow: Application.Current.MainWindow,
+                //    corner: Corner.TopRight,
+                //    offsetX: 10,
+                //    offsetY: 10);
+
+                cfg.LifetimeSupervisor = new TimeAndCountBasedLifetimeSupervisor(
+                    notificationLifetime: TimeSpan.FromSeconds(3),
+                    maximumNotificationCount: MaximumNotificationCount.FromCount(5));
+
+                cfg.Dispatcher = Application.Current.Dispatcher;
+                cfg.DisplayOptions.TopMost = true;
+            });
+        }
+
+        private void SetFirstItems(int delayIndex = 0, int minPercentageIndex = 2, int maxPercentageIndex = 1)
+        {
+            DelayComboBox.SelectedIndex = delayIndex;
+            DelayComboBox.SelectedValue = TimeIntervalsInSeconds[delayIndex];
+
+            MaxPercentageComboBox.SelectedIndex = maxPercentageIndex;
+            MaxPercentageComboBox.SelectedValue = MaxPercentages[maxPercentageIndex];
+
+            MinPercentageComboBox.SelectedIndex = minPercentageIndex;
+            MinPercentageComboBox.SelectedValue = MinPercentages[minPercentageIndex];
+        }
+
+        private void TestFill()
+        {
+            var plot = BatteryPercentageModel;
+            plot.Series.Add(CreateNormalDistributionSeries(-5, 5, 0, 0.2));
+            plot.Series.Add(CreateNormalDistributionSeries(-5, 5, 0, 1));
+            plot.Series.Add(CreateNormalDistributionSeries(-5, 5, 0, 5));
+            plot.Series.Add(CreateNormalDistributionSeries(-5, 5, -2, 0.5));
+        }
+
+        private static LineSeries CreateNormalDistributionSeries(double x0, double x1, double mean, double variance, int n = 1000)
+        {
+            var ls = new LineSeries
+            {
+                Title = string.Format("μ={0}, σ²={1}", mean, variance)
+            };
+
+            for (int i = 0; i < n; i++)
+            {
+                double x = x0 + ((x1 - x0) * i / (n - 1));
+                double f = 1.0 / Math.Sqrt(2 * Math.PI * variance) * Math.Exp(-(x - mean) * (x - mean) / 2 / variance);
+                ls.Points.Add(new DataPoint(x, f));
+            }
+
+            return ls;
         }
 
         public void ResetApplicationView()
@@ -146,7 +237,7 @@ namespace BatteryWarning.WPF
             UpdateDelayFromComboBox();
         }
 
-        private PlotModel InitPlot(string title,
+        private static PlotModel InitPlot(string title,
             string xLabel, string yLabel,
             bool allowScaling = false,
             double xMin = 0, double xMax = 0,
@@ -213,11 +304,11 @@ namespace BatteryWarning.WPF
 
         private void UpdateTimeSerie(int index = 0)
         {
-            var currSerie = PercentageTimeSerie.Series[index];
+            var currSerie = BatteryPercentageModel.Series[index];
             var plot = currSerie as LineSeries;
             PreventMemoryLeak(plot);
             plot.Points.Add(new DataPoint(_timeAxis, BatteryPercentage));
-            PercentageTimeSerie.InvalidatePlot(true);
+            BatteryPercentageModel.InvalidatePlot(true);
             _timeAxis += TimeSpan.FromSeconds(GetCurrentDelayInSeconds()).TotalMinutes;
         }
 
@@ -245,16 +336,18 @@ namespace BatteryWarning.WPF
                 var upperLimitPercentage = 80.0f;
                 var lowerLimitPercentage = 30.0f;
 
-                if (SystemPower.HasNoBattery())
+                //TODO: correggere
+                var flag = SystemPower.BatteryFlag.NoSystemBattery; //SystemPower.GetCurrentStatus();
+                if (flag == SystemPower.BatteryFlag.NoSystemBattery || flag == SystemPower.BatteryFlag.Unknown)
                 {
-                    percentage = -1;
+                    percentage = 20;
                 }
 
                 await Dispatcher.BeginInvoke((Action)(() =>
                 {
                     UpdateInterface(percentage);
-                    upperLimitPercentage = MaxPercentage;
-                    lowerLimitPercentage = MinPercentage;
+                    //upperLimitPercentage = MaxPercentage;
+                    //lowerLimitPercentage = MinPercentage;
                 }));
 
                 //await Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background,
@@ -264,15 +357,23 @@ namespace BatteryWarning.WPF
                 //    upperLimitPercentage = MaxPercentage;
                 //    lowerLimitPercentage = MinPercentage;
                 //});
-                var isCharging = SystemPower.ACPowerPluggedIn();
+                var isCharging = flag == SystemPower.BatteryFlag.Charging;
+
                 if (percentage > upperLimitPercentage && isCharging)
                 {
-                    NotifyUser($"Battery Level above {upperLimitPercentage}%. To disconnect the power supply is suggested.");
+                    await Dispatcher.BeginInvoke((Action)(() =>
+                   {
+                       NotifyUser(
+                           $"Battery Level above {upperLimitPercentage}%. To disconnect the power supply is suggested.");
+                   }));
                 }
 
                 if (percentage < lowerLimitPercentage && !isCharging)
                 {
-                    NotifyUser($"Battery Level under {lowerLimitPercentage}%. Please, connect the power supply.");
+                    await Dispatcher.BeginInvoke((Action)(() =>
+                    {
+                        NotifyUser($"Battery Level under {lowerLimitPercentage}%. Please, connect the power supply.");
+                    }));
                 }
 
                 //MainPage.OnBatteryChanged.Invoke(percentage);
@@ -287,68 +388,11 @@ namespace BatteryWarning.WPF
             NotifyUser(message, expiration);
         }
 
-        public static void NotifyUser(string message, int durationSeconds)
+        public void NotifyUser(string message, int durationSeconds)
         {
-            var toastContent = $@"<toast launch='action=viewAlarm&amp;alarmId=3' scenario='alarm'>
-                  <visual>
-                    <binding template='ToastGeneric'>
-                      <text>Battery Level Notification!</text>
-                      <text>{message}</text>
-                    </binding>
-                  </visual>
-                  <actions>
-                    <action
-                      activationType='background'
-                      arguments='dismiss'
-                      content='Dismiss'/>
-                  </actions>
-                </toast>";
-
-            //ToastVisual visual = new ToastVisual()
-            //{
-            //    BindingGeneric = new ToastBindingGeneric()
-            //    {
-            //        Children =
-            //        {
-            //            new AdaptiveText()
-            //            {
-            //                Text = title
-            //            },
-
-            //            new AdaptiveText()
-            //            {
-            //                Text = message
-            //            },
-            //        }
-            //    }
-            //};
-
-            //// Now we can construct the final toast content
-            //ToastContent toastContent = new ToastContent()
-            //{
-            //    Visual = visual,
-
-            //    // Arguments when the user taps body of toast
-            //    Launch = new QueryString()
-            //    {
-            //        { "action", "viewConversation" },
-            //        { "conversationId", Guid.NewGuid().ToString() }
-            //    }.ToString()
-            //};
-
-            //// And create the toast notification
-            //var toast = new ToastNotification(toastContent.GetXml());
-
-            //TODO: notification
-            //XmlDocument xml = new XmlDocument();
-            //xml.LoadXml(toastContent);
-            //var expiration = durationSeconds;
-            //var toast = new ToastNotification(xml)
-            //{
-            //    ExpirationTime = DateTime.Now.AddMinutes(expiration)
-            //};
-
-            //ToastNotificationManager.CreateToastNotifier().Show(toast);
+            //TODO: get notification working
+            _notifier.ClearMessages(new ClearFirst());
+            _notifier.ShowWarning(message);
         }
 
         #region Methods: Utils
