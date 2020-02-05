@@ -57,7 +57,6 @@ namespace BatteryWarning.WPF
         {
             SystemPowerStatus SPS = new SystemPowerStatus();
             GetSystemPowerStatus(out SPS);
-
             return SPS.BatteryLifePercent;
         }
 
