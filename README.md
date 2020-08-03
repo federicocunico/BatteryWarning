@@ -1,2 +1,2 @@
 # BatteryWarning
-Utility for custom warining on battery level. UWP application.
+Utility for custom warning on battery level. UWP application.
